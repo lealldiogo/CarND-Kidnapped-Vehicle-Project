@@ -103,7 +103,22 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
   // NOTE: this method will NOT be called by the grading code. But you will probably find it useful to
   //   implement this method and use it as a helper during the updateWeights phase.
 
+  for (int p = 0; p < predicted.size(); ++p) {
+    // setting first observation as closest before comparing
+    predicted[p].id = 0;
+    double closest_observation = dist(observations[0].x,predicted[p].x,observations[0].y,predicted[p].y);
 
+    for (int o = 1; o < observations.size(); ++o) {
+
+      double distance = dist(observations[o].x,predicted[p].x,observations.y,predicted[p].y);
+
+      if (closest_observation > distance) {
+        // if the distance for the "o" observation is smaller than the stored closest, update
+        closest_observation = distance;
+        predicted[p].id = o;
+      }
+    }
+  }
 
 
 }
@@ -121,70 +136,99 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   //   3.33
   //   http://planning.cs.uiuc.edu/node99.html
 
-
-  for (int j = 0; j < landmark_list.size(); ++j) {
-
-  }
-
-
-
   for (int i = 0; i < num_particles; ++i) {
 
-    vector<LandmarkObs> trans_observations;
+    vector<LandmarkObs> predicted_observations;
 
-    for (int o = 0; o < observations.size(); ++o) {
-      LandmarkObs trans_obs;
+    for (int j = 0; j < map_landmarks.landmark_list.size(); ++j) {
+      LandmarkObs predicted_obs;
 
-      // transform to map x and y coordinates
-      trans_obs.x = particles[i].x + (cos(particles[i].theta) * observations[o].x) - (sin(particles[i].theta) * observations[o].y)
-      trans_obs.y = particles[i].y + (sin(particles[i].theta) * observations[o].x) + (cos(particles[i].theta) * observations[o].y)
+      double landmark_x = map_landmarks.landmark_list[j].x_f;
+      double landmark_y = map_landmarks.landmark_list[j].y_f;
 
-      trans_observations.push_back(trans_obs)
+      predicted_obs.x = - (cos(particles[i].theta)*particles[i].x) - (sin(particles[i].theta)*particles[i].y) + (cos(particles[i].theta)*observations[o].x) - (sin(particles[i].theta)*observations[o].y);
+      predicted_obs.y = (sin(particles[i].theta)*particles[i].x) + (cos(particles[i].theta)*particles[i].y) + (sin(particles[i].theta)*observations[o].x) + (cos(particles[i].theta)*observations[o].y);
+
+      predicted_observations.push_back(predicted_obs);
     }
+
+    dataAssociation(predicted_observations, observations);
+
     particles[i].weight = 1.0;
 
-    double closest_landmark = sensor_range;
+    for (int o = 0; o < predicted_observations.size(); ++o) {
 
-    for (int t = 0; t < trans_observations.size(); ++t) {
+      double predicted_sense = dist(predicted_observations[o].x, particles[i].x, predicted_observations[o].y, particles[i].y);
 
-      double landmark_x = map_landmarks.landmark_list[j].x_f
-      double landmark_y = map_landmarks.landmark_list[j].y_f
-
-      double distance = dist(trans_observations[t].x,landmark_x,trans_observations[t].y,landmark_y);
-
-      // landmarks within sensor range
-
-      if (distance < closest_landmark) {
-        closest_landmark = distance;
-        association = j;
-      }
-    }
-
-
-      if (association!=0){
-        double meas_x = trans_observations[t].x;
-        double meas_y = trans_observations[t].y;
-        double mu_x = map_landmarks.landmark_list[association].x_f;
-        double mu_y = map_landmarks.landmark_list[association].y_f;
+      if (predicted_sense < sensor_range){
+        double meas_x = predicted_observations[o].x;
+        double meas_y = predicted_observations[o].y;
+        double mu_x = observations[predicted.id].x_f;
+        double mu_y = observations[predicted.id].y_f;
         long double multiplier = exp(-(pow(meas_x - mu_x, 2.0)/(2*std_landmark[0]*std_landmark[0]) + pow(meas_y - mu_y, 2.0)/(2*std_landmark[1]*std_landmark[1])))/(2*M_PI*std_landmark[0]*std_landmark[1]);
         if (multiplier > 0){
-          particles[i].weight *= multiplier
+          particles[i].weight *= multiplier;
         }
       }
-
-
-
-
-
-
-      associations.push_back.pushback(association + 1);
-      sense_x.pushback(trans_observations[t].x);
-      sense_y.pushback(trans_observations[t].y);
-
-
-  weights[i] = particles[i].weight;
-
+      associations.push_back.pushback(predicted_observations[o].id);
+      sense_x.pushback(predicted_observations[o].x);
+      sense_y.pushback(predicted_observations[o].y);
+    }
+    weights[i] = particles[i].weight;
   }
+
+
+  // for (int i = 0; i < num_particles; ++i) {
+
+  //   vector<LandmarkObs> trans_observations;
+
+  //   for (int o = 0; o < observations.size(); ++o) {
+  //     LandmarkObs trans_obs;
+
+  //     // transform to map x and y coordinates
+  //     trans_obs.x = particles[i].x + (cos(particles[i].theta) * observations[o].x) - (sin(particles[i].theta) * observations[o].y);
+  //     trans_obs.y = particles[i].y + (sin(particles[i].theta) * observations[o].x) + (cos(particles[i].theta) * observations[o].y);
+
+  //     trans_observations.push_back(trans_obs);
+  //   }
+
+  //   particles[i].weight = 1.0;
+
+  //   double closest_landmark = sensor_range;
+
+  //   for (int t = 0; t < trans_observations.size(); ++t) {
+
+
+  //     double distance = dist(trans_observations[t].x,landmark_x,trans_observations[t].y,landmark_y);
+
+  //     // landmarks within sensor range
+
+  //     if (distance < closest_landmark) {
+  //       closest_landmark = distance;
+  //       association = j;
+  //     }
+  //   }
+
+
+  //     if (association!=0){
+  //       double meas_x = trans_observations[t].x;
+  //       double meas_y = trans_observations[t].y;
+  //       double mu_x = map_landmarks.landmark_list[association].x_f;
+  //       double mu_y = map_landmarks.landmark_list[association].y_f;
+  //       long double multiplier = exp(-(pow(meas_x - mu_x, 2.0)/(2*std_landmark[0]*std_landmark[0]) + pow(meas_y - mu_y, 2.0)/(2*std_landmark[1]*std_landmark[1])))/(2*M_PI*std_landmark[0]*std_landmark[1]);
+  //       if (multiplier > 0){
+  //         particles[i].weight *= multiplier
+  //       }
+  //     }
+
+  //     associations.push_back.pushback(association + 1);
+  //     sense_x.pushback(trans_observations[t].x);
+  //     sense_y.pushback(trans_observations[t].y);
+
+
+  // weights[i] = particles[i].weight;
+
+  // }
 }
 
 
@@ -192,7 +236,10 @@ void ParticleFilter::resample() {
   // TODO: Resample particles with replacement with probability proportional to their weight.
   // NOTE: You may find std::discrete_distribution helpful here.
   //   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
-  std::discrete_distribution<>
+  default_random_engine gen;
+  discrete_distribution<int> distribution(weights.begin(), weights.end());
+
+  vector<Particle> resample_particles;
 
   for (int i = 0; i < num_particles; ++i) {
     resample_particles.push_back(particles[distribution(gen)]);
