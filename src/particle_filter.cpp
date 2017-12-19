@@ -85,13 +85,13 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
       new_theta = particles[i].theta + yaw_rate * delta_t;
     }
 
-    normal_distribution<double> dist_x(new_x, std_pos[0]);
-    normal_distribution<double> dist_y(new_y, std_pos[1]);
-    normal_distribution<double> dist_theta(new_theta, std_pos[2]);
+    normal_distribution<double> nd_x(new_x, std_pos[0]);
+    normal_distribution<double> nd_y(new_y, std_pos[1]);
+    normal_distribution<double> nd_theta(new_theta, std_pos[2]);
 
-    particles[i].x = dist_x(gen);
-    particles[i].y = dist_y(gen);
-    particles[i].theta = dist_theta(gen);
+    particles[i].x = nd_x(gen);
+    particles[i].y = nd_y(gen);
+    particles[i].theta = nd_theta(gen);
 
   }
 
@@ -102,6 +102,24 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
   //   observed measurement to this particular landmark.
   // NOTE: this method will NOT be called by the grading code. But you will probably find it useful to
   //   implement this method and use it as a helper during the updateWeights phase.
+
+
+
+
+}
+
+void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
+    const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
+  // TODO: Update the weights of each particle using a mult-variate Gaussian distribution. You can read
+  //   more about this distribution here: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
+  // NOTE: The observations are given in the VEHICLE'S coordinate system. Your particles are located
+  //   according to the MAP'S coordinate system. You will need to transform between the two systems.
+  //   Keep in mind that this transformation requires both rotation AND translation (but no scaling).
+  //   The following is a good resource for the theory:
+  //   https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
+  //   and the following is a good resource for the actual equation to implement (look at equation
+  //   3.33
+  //   http://planning.cs.uiuc.edu/node99.html
 
 
   for (int j = 0; j < landmark_list.size(); ++j) {
@@ -122,67 +140,64 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
       trans_obs.y = particles[i].y + (sin(particles[i].theta) * observations[o].x) + (cos(particles[i].theta) * observations[o].y)
 
       trans_observations.push_back(trans_obs)
-
     }
-
     particles[i].weight = 1.0;
+
+    double closest_landmark = sensor_range;
 
     for (int t = 0; t < trans_observations.size(); ++t) {
 
       double landmark_x = map_landmarks.landmark_list[j].x_f
       double landmark_y = map_landmarks.landmark_list[j].y_f
 
-      double closest_landmark;
-      double dist = sqrt(pow(trans_observations[t].x - landmark_x,2.0)+pow(trans_observations[t].y - landmark_y,2.0));
-      if (dist < closest_landmark) {
-        closest_landmark = dist;
+      double distance = dist(trans_observations[t].x,landmark_x,trans_observations[t].y,landmark_y);
+
+      // landmarks within sensor range
+
+      if (distance < closest_landmark) {
+        closest_landmark = distance;
+        association = j;
+      }
+    }
+
+
+      if (association!=0){
+        double meas_x = trans_observations[t].x;
+        double meas_y = trans_observations[t].y;
+        double mu_x = map_landmarks.landmark_list[association].x_f;
+        double mu_y = map_landmarks.landmark_list[association].y_f;
+        long double multiplier = exp(-(pow(meas_x - mu_x, 2.0)/(2*std_landmark[0]*std_landmark[0]) + pow(meas_y - mu_y, 2.0)/(2*std_landmark[1]*std_landmark[1])))/(2*M_PI*std_landmark[0]*std_landmark[1]);
+        if (multiplier > 0){
+          particles[i].weight *= multiplier
+        }
       }
 
 
 
 
 
-
-
-      double mu_x = map_landmarks.landmark_list[association].x_f;
-      double mu_y = map_landmarks.landmark_list[association].y_f;
-      long double multiplier = 1/(2*M_PI*std_landmark[0]*std_landmark[1])
-      if (multiplier > 0){
-        particles[i].weight *= multiplier
-      }
 
       associations.push_back.pushback(association + 1);
       sense_x.pushback(trans_observations[t].x);
       sense_y.pushback(trans_observations[t].y);
 
-    }
 
   weights[i] = particles[i].weight;
 
   }
-
 }
 
-void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
-    const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
-  // TODO: Update the weights of each particle using a mult-variate Gaussian distribution. You can read
-  //   more about this distribution here: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
-  // NOTE: The observations are given in the VEHICLE'S coordinate system. Your particles are located
-  //   according to the MAP'S coordinate system. You will need to transform between the two systems.
-  //   Keep in mind that this transformation requires both rotation AND translation (but no scaling).
-  //   The following is a good resource for the theory:
-  //   https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
-  //   and the following is a good resource for the actual equation to implement (look at equation
-  //   3.33
-  //   http://planning.cs.uiuc.edu/node99.html
-
-}
 
 void ParticleFilter::resample() {
   // TODO: Resample particles with replacement with probability proportional to their weight.
   // NOTE: You may find std::discrete_distribution helpful here.
   //   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
+  std::discrete_distribution<>
 
+  for (int i = 0; i < num_particles; ++i) {
+    resample_particles.push_back(particles[distribution(gen)]);
+  }
+  particles = resample_particles;
 }
 
 Particle ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations,
@@ -193,9 +208,15 @@ Particle ParticleFilter::SetAssociations(Particle& particle, const std::vector<i
     // sense_x: the associations x mapping already converted to world coordinates
     // sense_y: the associations y mapping already converted to world coordinates
 
+    particle.associations.clear();
+    particle.sense_x.clear();
+    particle.sense_y.clear();
+
     particle.associations= associations;
     particle.sense_x = sense_x;
     particle.sense_y = sense_y;
+
+    return particle;
 }
 
 string ParticleFilter::getAssociations(Particle best)
