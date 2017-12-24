@@ -20,7 +20,7 @@ I actually started the project implementing the process inverted, by converting 
 
 Imagining this could be a problem on the weight calculation as my 'meas' and 'mu' coordinates where both in particle coordinates, I changed everything back to map coordinates only to find that the problem persisted.
 
-I went to the forums and found that a possible problem was the `default_random_engine` and that it was possible to achieve better results by changing it to `mt19937` a random number generation based on Mersenne Twister algorithm. The results did improve and the best particle looked more accurate!
+I went to the forums and found that a possible problem was the `default_random_engine` and that it was possible to achieve better results by changing it to `mt19937` a random number generation based on Mersenne Twister algorithm([link to forum topic](https://discussions.udacity.com/t/error-gets-large-weights-go-to-zero-problem-with-std-default-random-engine/452577)). The results did improve and the best particle looked more accurate!
 
 Because the simulator is not configured properly in my pc, I can't see if I don't know if the project is passing the criteria or not. I have a native Ubuntu LTS 16.04 but am running the simulator using Wine and because of that no text is printed. More on that [here](https://discussions.udacity.com/t/term2-sim-not-working-on-ubuntu/287954/6)
 
