@@ -26,7 +26,10 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
   num_particles = 100;
-  default_random_engine gen;
+  // default_random_engine gen;
+
+  random_device rd;
+  mt19937 gen(rd());
 
   // This line creates a normal (Gaussian) distribution for x, y and theta.
   normal_distribution<double> dist_x(x, std[0]);
@@ -58,7 +61,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
-  default_random_engine gen;
+  // default_random_engine gen;
+  random_device rd;
+  mt19937 gen(rd());
 
 
   for (int i = 0; i < num_particles; ++i) {
@@ -75,6 +80,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
       new_x = particles[i].x + velocity * (sin(particles[i].theta + yaw_rate * delta_t) - sin(particles[i].theta)) / yaw_rate;
       new_y = particles[i].y + velocity * (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate * delta_t)) / yaw_rate;
       new_theta = particles[i].theta + yaw_rate * delta_t;
+      // angle normalization
+      while (new_theta> M_PI) new_theta-=2.*M_PI;
+      while (new_theta<-M_PI) new_theta+=2.*M_PI;
     }
 
     normal_distribution<double> nd_x(new_x, std_pos[0]);
@@ -246,7 +254,10 @@ void ParticleFilter::resample() {
   // TODO: Resample particles with replacement with probability proportional to their weight.
   // NOTE: You may find std::discrete_distribution helpful here.
   //   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
-  default_random_engine gen;
+  // default_random_engine gen;
+  random_device rd;
+  mt19937 gen(rd());
+
   discrete_distribution<int> distribution(weights.begin(), weights.end());
 
   vector<Particle> resample_particles;
