@@ -149,6 +149,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
         double distance = sqrt(pow(trans_observations[t].x - landmark_x,2.0) + pow(trans_observations[t].y - landmark_y,2.0));
 
+        // The problem was that I was using the distance function like this:
+        // double distance = dist(trans_observations[t].x,landmark_x,trans_observations[t].y,landmark_y);
+        // when it should have been like this:
+        // double distance = dist(trans_observations[t].x,trans_observations[t].y,landmark_x,landmark_y);
+
         // landmarks within sensor range
         if (distance < closest_landmark) {
           closest_landmark = distance;
