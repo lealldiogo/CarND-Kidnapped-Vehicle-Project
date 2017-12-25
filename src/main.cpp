@@ -110,22 +110,22 @@ int main()
 
   		  // Update the weights and resample
   		  pf.updateWeights(sensor_range, sigma_landmark, noisy_observations, map);
-  		  pf.resample();
+        pf.resample();
 
-  		  // Calculate and output the average weighted error of the particle filter over all time steps so far.
-  		  vector<Particle> particles = pf.particles;
-  		  int num_particles = particles.size();
-  		  double highest_weight = -1.0;
-  		  Particle best_particle;
-  		  double weight_sum = 0.0;
-  		  for (int i = 0; i < num_particles; ++i) {
-      		if (particles[i].weight > highest_weight) {
-      			highest_weight = particles[i].weight;
-      			best_particle = particles[i];
-      		}
+        // Calculate and output the average weighted error of the particle filter over all time steps so far.
+        vector<Particle> particles = pf.particles;
+        int num_particles = particles.size();
+        double highest_weight = -1.0;
+        Particle best_particle;
+        double weight_sum = 0.0;
+        for (int i = 0; i < num_particles; ++i) {
+          if (particles[i].weight > highest_weight) {
+            highest_weight = particles[i].weight;
+            best_particle = particles[i];
+          }
           weight_sum += particles[i].weight;
-  		  }
-  		  cout << "highest w " << highest_weight << endl;
+        }
+        cout << "highest w " << highest_weight << endl;
         cout << "average w " << weight_sum/num_particles << endl;
 
         json msgJson;
@@ -133,18 +133,18 @@ int main()
         msgJson["best_particle_y"] = best_particle.y;
         msgJson["best_particle_theta"] = best_particle.theta;
 
-        cout << "best x: " << best_particle.x << endl;
-        cout << "best y: " << best_particle.y << endl;
-        cout << "best theta: " << best_particle.theta << endl;
+        // cout << "best x: " << best_particle.x << endl;
+        // cout << "best y: " << best_particle.y << endl;
+        // cout << "best theta: " << best_particle.theta << endl;
 
         //Optional message data used for debugging particle's sensing and associations
         msgJson["best_particle_associations"] = pf.getAssociations(best_particle);
         msgJson["best_particle_sense_x"] = pf.getSenseX(best_particle);
         msgJson["best_particle_sense_y"] = pf.getSenseY(best_particle);
 
-        cout << "best association: " << pf.getAssociations(best_particle) << endl;
-        cout << "best sense_x: " << pf.getSenseX(best_particle) << endl;
-  		  cout << "best sense_y: " << pf.getSenseY(best_particle) << endl;
+      //   cout << "best association: " << pf.getAssociations(best_particle) << endl;
+      //   cout << "best sense_x: " << pf.getSenseX(best_particle) << endl;
+  		  // cout << "best sense_y: " << pf.getSenseY(best_particle) << endl;
 
         auto msg = "42[\"best_particle\"," + msgJson.dump() + "]";
         // std::cout << msg << std::endl;
